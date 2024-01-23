@@ -1,35 +1,23 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 public class Main {
-    private static final int LIMIT = 10000000;  // 10 Million
 
     public static void main(String[] args) {
-        List<Integer> primes = new ArrayList<Integer>();
 
-        for(int current_num = 2; current_num <= LIMIT; current_num++) {
-            if(check_prime(current_num)) {
-                primes.add(current_num);
-            }
-        }
+        Scanner scanner = new Scanner(System.in);
+        int LIMIT;
+        int threads;
 
-        System.out.printf("%d primes were found.\n",primes.size());
-    }
+        System.out.print("Input the upper bound of integers to check: ");
+        LIMIT = scanner.nextInt();
 
-    /*
-    This function checks if an integer n is prime.
+        System.out.print("Input the number of threads to use: ");
+        threads = scanner.nextInt();
 
-    Parameters:
-    n : int - integer to check
+        int rangePerThread = LIMIT / threads;
 
-    Returns true if n is prime, and false otherwise.
-    */
-    public static boolean check_prime(int n) {
-        for(int i = 2; i * i <= n; i++) {
-            if(n % i == 0) {
-                return false;
-            }
-        }
-        return true;
+
     }
 }

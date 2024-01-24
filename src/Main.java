@@ -6,17 +6,28 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Main {
+    private static final int DEFAULT_THREAD_COUNT = 1;
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         long startTime, endTime;
+        int nLimit;
+        int nThreads;
 
         // USER INPUT
         System.out.print("Enter the upper bound of integers to check: ");
-        int nLimit = scanner.nextInt();
+        nLimit = scanner.nextInt();
+        scanner.nextLine(); // Consume the leftover newline from nextInt()
 
         System.out.print("Enter the number of threads to use: ");
-        int nThreads = scanner.nextInt();
+        String input = scanner.nextLine();
+//        nThreads = input.isEmpty() ? DEFAULT_THREAD_COUNT : Integer.parseInt(input);
+        if (input.isEmpty()) {
+            nThreads = DEFAULT_THREAD_COUNT;
+            System.out.println("No input entered. Using default thread count value: " + DEFAULT_THREAD_COUNT);
+        } else {
+            nThreads = Integer.parseInt(input);
+        }
 
         scanner.close();
 

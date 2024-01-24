@@ -9,8 +9,7 @@ public class Main {
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        long startTime;
-        long endTime;
+        long startTime, endTime;
 
         // USER INPUT
         System.out.print("Enter the upper bound of integers to check: ");
@@ -27,7 +26,7 @@ public class Main {
         // SETUP THREADS AND NUMBER RANGE PER THREAD
         List<Thread> threads = new ArrayList<>();
         int nRangePerThread = nLimit / nThreads;
-        System.out.println("numbers per thread: " + nRangePerThread + "\n");
+        System.out.println("\nNumbers per thread: " + nRangePerThread + "\n");
 
 //        List<Integer> primes = new CopyOnWriteArrayList<>();  // The CopyOnWriteArrayList handles mutual exclusion internally (thread-safe).
         List<Integer> primes = new ArrayList<Integer>();  // This is not thread-safe, will result in race conditions without mutexes/locks.

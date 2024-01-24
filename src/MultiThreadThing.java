@@ -1,3 +1,7 @@
+/**
+ * This is a scratch file
+ */
+
 public class MultiThreadThing implements Runnable {
 
     private final int threadNumber;

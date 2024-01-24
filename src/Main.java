@@ -20,21 +20,30 @@ public class Main {
 
         // SETUP THREADS AND NUMBER RANGE PER THREAD
         List<Thread> threads = new ArrayList<>();
-        int nRangePerThread = (nLimit / nThreads) + 1;
+        int nRangePerThread = nLimit / nThreads;
         System.out.println("numbers per thread: " + nRangePerThread + "\n");
 
         // ITERATE THRU EVERY THREAD
-        for(int i=0; i<nThreads; i++){
+        for(int i=1; i<=nThreads; i++){
             //SETUP RANGE OF NUMBERS TO BE ASSIGNED ON THE CURRENT THREAD
-            int start = i * nRangePerThread + 2;
-            int end = (i + 1) * nRangePerThread;
+            int start = (i - 1) * nRangePerThread + 2;
+            int end = i * nRangePerThread + 1;
 
-            System.out.println(start);
-            System.out.println(end);
+            // LAST THREAD COVERS THE REMAINING RANGE OF IF nLimit % nThreads != 0
+            if (i == nThreads) {
+                end = nLimit;
+            }
+//            CHECK RESULTS
+            System.out.println("Thread " + i + " range:");
+            System.out.println("Start: " + start);
+            System.out.println("End: " + end);
             System.out.println();
 
-            // CREATE A THREAD THAT ITERATES THRU EACH OF ITS NUMBERS
-
+//            for (int currentNum = start; currentNum <= end; currentNum++){
+//                if(check_prime(currentNum)){
+//                    // PERFORM SYNC LOCK AND ADD TO PRIMES LIST
+//                }
+//            }
 
         }
 

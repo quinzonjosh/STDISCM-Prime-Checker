@@ -2,6 +2,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Main {
 
@@ -30,6 +32,8 @@ public class Main {
 //        List<Integer> primes = new CopyOnWriteArrayList<>();  // The CopyOnWriteArrayList handles mutual exclusion internally (thread-safe).
         List<Integer> primes = new ArrayList<Integer>();  // This is not thread-safe, will result in race conditions without mutexes/locks.
 
+        Lock primesLock = new ReentrantLock();
+
         // ITERATE THRU EVERY THREAD
         for(int i=1; i<=nThreads; i++) {
             // SETUP RANGE OF NUMBERS TO BE ASSIGNED ON THE CURRENT THREAD
@@ -48,7 +52,7 @@ public class Main {
             System.out.println();
 
             // THREAD CREATION
-            Thread thread = new Thread(new PrimeTask(start, end, primes));
+            Thread thread = new Thread(new PrimeTask(start, end, primes, primesLock));
             threads.add(thread);
             thread.start();
         }
@@ -73,18 +77,25 @@ public class Main {
         private final int start;
         private final int end;
         private final List<Integer> primes;
+        private final Lock lock;
 
-        PrimeTask(int start, int end, List<Integer> primes) {
+        PrimeTask(int start, int end, List<Integer> primes, Lock lock) {
             this.start = start;
             this.end = end;
             this.primes = primes;
+            this.lock = lock;
         }
 
         @Override
         public void run() {
             for (int currentNum = start; currentNum <= end; currentNum++) {
                 if (check_prime(currentNum)) {
-                    primes.add(currentNum);
+                    lock.lock();
+                    try {
+                        primes.add(currentNum);
+                    } finally {
+                        lock.unlock();
+                    }
                 }
             }
         }

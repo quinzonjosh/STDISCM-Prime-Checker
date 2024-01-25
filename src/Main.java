@@ -40,7 +40,7 @@ public class Main {
         for(int attempt = 0; attempt < 5; attempt++){
 
             col = 0;
-            for(nThreads = 1; nThreads <= 1024; nThreads *=2){
+            for(nThreads = 1; nThreads <= 65536; nThreads *=2){
 
 //            for(int num = 0; num < 3; num++){
 

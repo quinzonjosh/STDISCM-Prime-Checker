@@ -37,7 +37,7 @@ public class Main {
         // SETUP THREADS AND NUMBER RANGE PER THREAD
         List<Thread> threads = new ArrayList<>();
         int nRangePerThread = nLimit / nThreads;
-        System.out.println("\nNumbers per thread: " + nRangePerThread + "\n");
+        System.out.printf("\nNumbers per thread: %d / %d = %d\n\n", nLimit, nThreads, nRangePerThread);
 
 //        List<Integer> primes = new CopyOnWriteArrayList<>();  // The CopyOnWriteArrayList handles mutual exclusion internally (thread-safe).
         List<Integer> primes = new ArrayList<Integer>();  // This is not thread-safe, will result in race conditions without mutexes/locks.

@@ -56,10 +56,10 @@ public class Main {
             }
 
             // CHECK RESULTS
-            System.out.println("Thread " + i + " range:");
-            System.out.println("Start: " + start);
-            System.out.println("End: " + end);
-            System.out.println();
+//            System.out.println("Thread " + i + " range:");
+//            System.out.println("Start: " + start);
+//            System.out.println("End: " + end);
+//            System.out.println();
 
             // THREAD CREATION
             Thread thread = new Thread(new PrimeTask(start, end, primes, primesLock));

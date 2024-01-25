@@ -31,7 +31,7 @@ public class Main {
 //
 //        scanner.close();
 
-        long[][] data = new long[5][11];
+        long[][] data = new long[5][18];
         int col = 0;
 
         nLimit = 10000000;
@@ -40,7 +40,7 @@ public class Main {
         for(int attempt = 0; attempt < 5; attempt++){
 
             col = 0;
-            for(nThreads = 1; nThreads <= 1024; nThreads *=2){
+            for(nThreads = 1; nThreads <= 131072; nThreads *=2){
 
 //            for(int num = 0; num < 3; num++){
 
@@ -110,7 +110,7 @@ public class Main {
 
 
         for(int i = 0; i < 5; i++){
-            for(int j = 0; j < 11; j++){
+            for(int j = 0; j < 18; j++){
                 System.out.printf("%d, ", data[i][j]);
             }
             System.out.println();

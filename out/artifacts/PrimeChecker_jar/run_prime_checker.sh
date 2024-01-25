@@ -3,9 +3,15 @@
 # Clear the screen
 clear
 
-# Prompt the user for the upper bound and the number of threads
-read -p "Enter the upper bound of integers to check: " upper_bound
-read -p "Enter the number of threads to use: " num_threads
+# Check if command-line arguments were provided
+if [ $# -ge 2 ]; then
+  upper_bound=$1
+  num_threads=$2
+else
+  # Prompt the user for the upper bound and the number of threads
+  read -p "Enter the upper bound of integers to check: " upper_bound
+  read -p "Enter the number of threads to use: " num_threads
+fi
 
 # Check for empty inputs and assign default values if necessary
 if [ -z "$upper_bound" ]; then

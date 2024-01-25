@@ -30,11 +30,17 @@ public class Main {
 //        }
 //
 //        scanner.close();
-
+        List<Thread> threads = new ArrayList<>();
         long[][] data = new long[5][18];
         int col = 0;
 
         nLimit = 10000000;
+
+        List<Integer> primes = new ArrayList<Integer>();  // This is not thread-safe, will result in race conditions without mutexes/locks.
+        Lock primesLock;
+        int nRangePerThread;
+        int start, end;
+        int i;
 
 
         for(int attempt = 0; attempt < 5; attempt++){
@@ -44,35 +50,27 @@ public class Main {
 
 //            for(int num = 0; num < 3; num++){
 
+                threads.clear();
+                primes.clear();
+
                 // START TIME AFTER USER INPUT
                 startTime = System.currentTimeMillis();
 
                 // SETUP THREADS AND NUMBER RANGE PER THREAD
-                List<Thread> threads = new ArrayList<>();
-                int nRangePerThread = nLimit / nThreads;
-                System.out.printf("\nNumbers per thread: %d / %d = %d\n\n", nLimit, nThreads, nRangePerThread);
-
-//        List<Integer> primes = new CopyOnWriteArrayList<>();  // The CopyOnWriteArrayList handles mutual exclusion internally (thread-safe).
-                List<Integer> primes = new ArrayList<Integer>();  // This is not thread-safe, will result in race conditions without mutexes/locks.
-
-                Lock primesLock = new ReentrantLock();
+                nRangePerThread = nLimit / nThreads;
+                primesLock = new ReentrantLock();
 
                 // ITERATE THRU EVERY THREAD
-                for(int i=1; i<=nThreads; i++) {
+                for(i=1; i<=nThreads; i++) {
                     // SETUP RANGE OF NUMBERS TO BE ASSIGNED ON THE CURRENT THREAD
-                    int start = (i - 1) * nRangePerThread + 2;
-                    int end = i * nRangePerThread + 1;
+                    start = (i - 1) * nRangePerThread + 2;
+                    end = i * nRangePerThread + 1;
 
                     // LAST THREAD COVERS THE REMAINING RANGE OF IF nLimit % nThreads != 0
                     if (i == nThreads) {
                         end = nLimit;
                     }
 
-                    // CHECK RESULTS
-                    System.out.println("Thread " + i + " range:");
-                    System.out.println("Start: " + start);
-                    System.out.println("End: " + end);
-                    System.out.println();
 
                     // THREAD CREATION
                     Thread thread = new Thread(new PrimeTask(start, end, primes, primesLock));
@@ -92,8 +90,10 @@ public class Main {
                 // END TIME BEFORE PRINTING NO. OF PRIMES
                 endTime = System.currentTimeMillis();
 
+//                System.out.printf("\nNumbers per thread: %d / %d = %d\n\n", nLimit, nThreads, nRangePerThread);
+                System.out.println("Thread Count: " + nThreads);
                 System.out.printf("%d primes were found.\n", primes.size());
-                System.out.println("Time taken: " + (endTime - startTime) + " ms");
+                System.out.println("Time taken: " + (endTime - startTime) + " ms\n");
 
 //            }
 
@@ -108,8 +108,8 @@ public class Main {
         }
 
 
-
-        for(int i = 0; i < 5; i++){
+        System.out.println();
+        for(i = 0; i < 5; i++){
             for(int j = 0; j < 18; j++){
                 System.out.printf("%d, ", data[i][j]);
             }

@@ -45,7 +45,6 @@ for (( i=1; i<=5; i++ )); do
   echo -e "${upper_bound}\n${num_threads}" | java -jar PrimeChecker.jar
 done
 
-# Inform the user that all runs have completed
+# Inform the user that all runs have been completed
 echo ""
 echo " --- ALL RUNS HAVE BEEN COMPLETED. --- "
-

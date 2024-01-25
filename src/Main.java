@@ -14,73 +14,112 @@ public class Main {
         int nLimit;
         int nThreads;
 
-        // USER INPUT
-        System.out.print("Enter the upper bound of integers to check: ");
-        nLimit = scanner.nextInt();
-        scanner.nextLine(); // Consume the leftover newline from nextInt()
+//        // USER INPUT
+//        System.out.print("Enter the upper bound of integers to check: ");
+//        nLimit = scanner.nextInt();
+//        scanner.nextLine(); // Consume the leftover newline from nextInt()
+//
+//        System.out.print("Enter the number of threads to use: ");
+//        String input = scanner.nextLine();
+////        nThreads = input.isEmpty() ? DEFAULT_THREAD_COUNT : Integer.parseInt(input);
+//        if (input.isEmpty()) {
+//            nThreads = DEFAULT_THREAD_COUNT;
+//            System.out.println("No input entered. Using default thread count value: " + DEFAULT_THREAD_COUNT);
+//        } else {
+//            nThreads = Integer.parseInt(input);
+//        }
+//
+//        scanner.close();
 
-        System.out.print("Enter the number of threads to use: ");
-        String input = scanner.nextLine();
-//        nThreads = input.isEmpty() ? DEFAULT_THREAD_COUNT : Integer.parseInt(input);
-        if (input.isEmpty()) {
-            nThreads = DEFAULT_THREAD_COUNT;
-            System.out.println("No input entered. Using default thread count value: " + DEFAULT_THREAD_COUNT);
-        } else {
-            nThreads = Integer.parseInt(input);
-        }
+        long[][] data = new long[5][11];
+        int col = 0;
 
-        scanner.close();
+        nLimit = 10000000;
 
-        // START TIME AFTER USER INPUT
-        startTime = System.currentTimeMillis();
 
-        // SETUP THREADS AND NUMBER RANGE PER THREAD
-        List<Thread> threads = new ArrayList<>();
-        int nRangePerThread = nLimit / nThreads;
-        System.out.printf("\nNumbers per thread: %d / %d = %d\n\n", nLimit, nThreads, nRangePerThread);
+        for(int attempt = 0; attempt < 5; attempt++){
+
+            col = 0;
+            for(nThreads = 1; nThreads <= 1024; nThreads *=2){
+
+//            for(int num = 0; num < 3; num++){
+
+                // START TIME AFTER USER INPUT
+                startTime = System.currentTimeMillis();
+
+                // SETUP THREADS AND NUMBER RANGE PER THREAD
+                List<Thread> threads = new ArrayList<>();
+                int nRangePerThread = nLimit / nThreads;
+                System.out.printf("\nNumbers per thread: %d / %d = %d\n\n", nLimit, nThreads, nRangePerThread);
 
 //        List<Integer> primes = new CopyOnWriteArrayList<>();  // The CopyOnWriteArrayList handles mutual exclusion internally (thread-safe).
-        List<Integer> primes = new ArrayList<Integer>();  // This is not thread-safe, will result in race conditions without mutexes/locks.
+                List<Integer> primes = new ArrayList<Integer>();  // This is not thread-safe, will result in race conditions without mutexes/locks.
 
-        Lock primesLock = new ReentrantLock();
+                Lock primesLock = new ReentrantLock();
 
-        // ITERATE THRU EVERY THREAD
-        for(int i=1; i<=nThreads; i++) {
-            // SETUP RANGE OF NUMBERS TO BE ASSIGNED ON THE CURRENT THREAD
-            int start = (i - 1) * nRangePerThread + 2;
-            int end = i * nRangePerThread + 1;
+                // ITERATE THRU EVERY THREAD
+                for(int i=1; i<=nThreads; i++) {
+                    // SETUP RANGE OF NUMBERS TO BE ASSIGNED ON THE CURRENT THREAD
+                    int start = (i - 1) * nRangePerThread + 2;
+                    int end = i * nRangePerThread + 1;
 
-            // LAST THREAD COVERS THE REMAINING RANGE OF IF nLimit % nThreads != 0
-            if (i == nThreads) {
-                end = nLimit;
+                    // LAST THREAD COVERS THE REMAINING RANGE OF IF nLimit % nThreads != 0
+                    if (i == nThreads) {
+                        end = nLimit;
+                    }
+
+                    // CHECK RESULTS
+                    System.out.println("Thread " + i + " range:");
+                    System.out.println("Start: " + start);
+                    System.out.println("End: " + end);
+                    System.out.println();
+
+                    // THREAD CREATION
+                    Thread thread = new Thread(new PrimeTask(start, end, primes, primesLock));
+                    threads.add(thread);
+                    thread.start();
+                }
+
+                // WAIT FOR ALL THREADS TO FINISH
+                for (Thread thread : threads) {
+                    try {
+                        thread.join();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                // END TIME BEFORE PRINTING NO. OF PRIMES
+                endTime = System.currentTimeMillis();
+
+                System.out.printf("%d primes were found.\n", primes.size());
+                System.out.println("Time taken: " + (endTime - startTime) + " ms");
+
+//            }
+
+                data[attempt][col] = endTime - startTime;
+                col++;
+
             }
 
-            // CHECK RESULTS
-            System.out.println("Thread " + i + " range:");
-            System.out.println("Start: " + start);
-            System.out.println("End: " + end);
+
+
+
+        }
+
+
+
+        for(int i = 0; i < 5; i++){
+            for(int j = 0; j < 11; j++){
+                System.out.printf("%d, ", data[i][j]);
+            }
             System.out.println();
-
-            // THREAD CREATION
-            Thread thread = new Thread(new PrimeTask(start, end, primes, primesLock));
-            threads.add(thread);
-            thread.start();
         }
 
-        // WAIT FOR ALL THREADS TO FINISH
-        for (Thread thread : threads) {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
 
-        // END TIME BEFORE PRINTING NO. OF PRIMES
-        endTime = System.currentTimeMillis();
 
-        System.out.printf("%d primes were found.\n", primes.size());
-        System.out.println("Time taken: " + (endTime - startTime) + " ms");
+
+
     }
 
     static class PrimeTask implements Runnable{

@@ -10,6 +10,8 @@ public class Client {
         // param 1: server IP address
         //      - on the computer of the server, open cmd, type ipconfig and get the ipv4 address
         // param 2: port number to use
+
+        // create socket to connect client to master server at port 4999
         Socket socket = new Socket("localhost", 4999);
         DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
 
@@ -29,7 +31,6 @@ public class Client {
         dataOutputStream.writeInt(nStartPoint);
         dataOutputStream.writeInt(nEndPoint);
 
-        dataOutputStream.close();
         socket.close();
 
 

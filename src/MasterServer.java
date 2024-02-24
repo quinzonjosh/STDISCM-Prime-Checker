@@ -1,13 +1,11 @@
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.LinkedList;
-import java.util.Queue;
 
 public class MasterServer {
 
-    private static final Queue<Request> requestQueue = new LinkedList<>();
 
     public static void main(String[] args) {
 
@@ -17,43 +15,35 @@ public class MasterServer {
 
             // continuously accept incoming client requests
             while(true){
-               // accept slave server connecting to master server
-               Socket socket = serverSocket.accept();
-               System.out.println("Client connected: " + socket.getInetAddress() + ": " + socket.getPort());
+                Socket clienSocket = serverSocket.accept();
+                System.out.println("Client connected: " + clienSocket.getInetAddress() + ": " + clienSocket.getPort());
 
-               // handle client request by adding to the queue
-               handleClientInput(socket);
+                // receive the start and end pt from the client
+                DataInputStream dataInputStream = new DataInputStream(clienSocket.getInputStream());
+                int nStartPoint = dataInputStream.readInt();
+                int nEndPoint = dataInputStream.readInt();
 
-               // sanity check if client input was received
-               printRequestQueue();
+                // set fixed num of threads accross all slave servers
+                int nThreads = 64;
+
+                // split and send data to slave servers
+                splitAndSendDataToSlaveServers(nStartPoint, nEndPoint, nThreads);
+
             }
         } catch (IOException e){
             e.printStackTrace();
         }
     }
 
-    private static void printRequestQueue() {
-        System.out.println("Request Queue:");
-        for (Request request : requestQueue) {
-            System.out.println("Client: " + request.getClientInfo() + ", Start Point: " + request.getStartPoint() + ", End Point: " + request.getEndPoint());
-        }
-        System.out.println();
-    }
+    private static void splitAndSendDataToSlaveServers(int nStartPoint, int nEndPoint, int nThreads) throws IOException {
+        // pass data to slave server at port 5000
+        Socket slaveServerSocket = new Socket("localhost", 5000);
+        DataOutputStream dataOutputStream = new DataOutputStream(slaveServerSocket.getOutputStream());
+        dataOutputStream.writeInt(nStartPoint);
+        dataOutputStream.writeInt(nEndPoint);
+        dataOutputStream.writeInt(nThreads);
 
-    private static void handleClientInput(Socket socket) {
-        try{
-            DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
-
-            int nStartPoint = dataInputStream.readInt();
-            int nEndPoint = dataInputStream.readInt();
-
-            // add request to the queue
-            requestQueue.offer(new Request(socket.getInetAddress().getHostAddress(), nStartPoint, nEndPoint));
-
-            dataInputStream.close();
-        } catch (IOException e){
-            e.printStackTrace();
-        }
+        slaveServerSocket.close();
     }
 }
 

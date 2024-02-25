@@ -36,14 +36,28 @@ public class MasterServer {
     }
 
     private static void splitAndSendDataToSlaveServers(int nStartPoint, int nEndPoint, int nThreads) throws IOException {
-        // pass data to slave server at port 5000
-        Socket slaveServerSocket = new Socket("localhost", 5000);
-        DataOutputStream dataOutputStream = new DataOutputStream(slaveServerSocket.getOutputStream());
-        dataOutputStream.writeInt(nStartPoint);
-        dataOutputStream.writeInt(nEndPoint);
-        dataOutputStream.writeInt(nThreads);
 
-        slaveServerSocket.close();
+        int nMidPoint = (nEndPoint - nStartPoint) / 2 + nStartPoint;
+
+        // pass data to slave server 1 at port 5000
+        // replace "localhost with computer server's ipv4 address"
+        Socket slaveServerSocket1 = new Socket("localhost", 5000);
+        DataOutputStream dataOutputStream1 = new DataOutputStream(slaveServerSocket1.getOutputStream());
+        dataOutputStream1.writeInt(nStartPoint);
+        dataOutputStream1.writeInt(nMidPoint);
+        dataOutputStream1.writeInt(nThreads);
+
+        slaveServerSocket1.close();
+
+        // pass data to slave server 2 at port 5001
+        // replace "localhost with computer server's ipv4 address"
+//        Socket slaveServerSocket2 = new Socket("localhost", 5001);
+//        DataOutputStream dataOutputStream2 = new DataOutputStream(slaveServerSocket2.getOutputStream());
+//        dataOutputStream2.writeInt(nMidPoint + 1);
+//        dataOutputStream2.writeInt(nEndPoint);
+//        dataOutputStream2.writeInt(nThreads);
+//
+//        slaveServerSocket2.close();
     }
 }
 

@@ -31,6 +31,7 @@ public class Client {
         dataOutputStream.writeInt(nStartPoint);
         dataOutputStream.writeInt(nEndPoint);
 
+        scanner.close();
         socket.close();
 
 

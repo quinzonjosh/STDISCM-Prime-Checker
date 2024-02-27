@@ -5,10 +5,6 @@ import java.net.Socket;
 
 public class SlaveServer {
 
-    private static int nStartPoint;
-    private static int nEndPoint;
-    private static int nThreads;
-
     public static void main(String[] args) {
         try(ServerSocket slaveServerSocket = new ServerSocket(5000)){
             System.out.println("Slave server launched!");
@@ -28,9 +24,9 @@ public class SlaveServer {
     private static void receiveDataFromMasterServer(Socket masterServerSocket) throws IOException {
 
         DataInputStream dataInputStream = new DataInputStream(masterServerSocket.getInputStream());
-        nStartPoint = dataInputStream.readInt();
-        nEndPoint = dataInputStream.readInt();
-        nThreads = dataInputStream.readInt();
+        int nStartPoint = dataInputStream.readInt();
+        int nEndPoint = dataInputStream.readInt();
+        int nThreads = dataInputStream.readInt();
 
         System.out.println("Slave Server Received: ");
         System.out.println("Start point: " + nStartPoint);

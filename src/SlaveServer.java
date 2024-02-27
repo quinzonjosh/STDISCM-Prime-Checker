@@ -6,7 +6,7 @@ import java.net.Socket;
 public class SlaveServer {
 
     public static void main(String[] args) {
-        try(ServerSocket slaveServerSocket = new ServerSocket(5000)){
+        try(ServerSocket slaveServerSocket = new ServerSocket(5001)){
             System.out.println("Slave server launched!");
 
             while (true){

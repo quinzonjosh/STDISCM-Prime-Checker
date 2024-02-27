@@ -1,63 +1,123 @@
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MasterServer {
-
+    private static final ExecutorService clientExecutor = Executors.newCachedThreadPool();
+    private static final ExecutorService slaveExecutor = Executors.newCachedThreadPool();
+    private static final List<SlaveInfo> slaves = new CopyOnWriteArrayList<>();
+    private static final int CLIENT_PORT = 4999;
+    private static final int SLAVE_REGISTRATION_PORT = 5001;
 
     public static void main(String[] args) {
+        // Separate thread for listening to slave server registrations
+        Thread slaveListenerThread = new Thread(() -> listenForSlaveRegistrations());
+        slaveListenerThread.start();
 
-        // try-with-resources: ServerSocket matically closes after try block for proper cleaning of resources
-        try (ServerSocket serverSocket = new ServerSocket(4999)) {
-            System.out.println("Master server launched!");
-
-            // continuously accept incoming client requests
-            while(true){
-                Socket clienSocket = serverSocket.accept();
-                System.out.println("Client connected: " + clienSocket.getInetAddress() + ": " + clienSocket.getPort());
-
-                // receive the start and end pt from the client
-                DataInputStream dataInputStream = new DataInputStream(clienSocket.getInputStream());
-                int nStartPoint = dataInputStream.readInt();
-                int nEndPoint = dataInputStream.readInt();
-
-                // set fixed num of threads accross all slave servers
-                int nThreads = 64;
-
-                // split and send data to slave servers
-                splitAndSendDataToSlaveServers(nStartPoint, nEndPoint, nThreads);
-
+        // try-with-resources: ServerSocket aumatically closes after try block for proper cleaning of resources
+        try (ServerSocket serverSocket = new ServerSocket(CLIENT_PORT)) {
+            System.out.println("Master Server Listening for clients on port " + CLIENT_PORT);
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
+                clientExecutor.submit(() -> handleClient(clientSocket));
             }
-        } catch (IOException e){
-            e.printStackTrace();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            clientExecutor.shutdown();
+            slaveExecutor.shutdown();
         }
     }
 
-    private static void splitAndSendDataToSlaveServers(int nStartPoint, int nEndPoint, int nThreads) throws IOException {
+    private static void listenForSlaveRegistrations() {
+        try (ServerSocket slaveListener = new ServerSocket(SLAVE_REGISTRATION_PORT)) {
+            System.out.println("Listening for Slave registrations on port " + SLAVE_REGISTRATION_PORT);
+            while (true) {
+                Socket slaveSocket = slaveListener.accept();
+                BufferedReader input = new BufferedReader(new InputStreamReader(slaveSocket.getInputStream()));
+                String slaveAddress = input.readLine();
+                int slavePort = Integer.parseInt(input.readLine());
+                slaves.add(new SlaveInfo(slaveAddress, slavePort));
+                System.out.println("Registered new slave - Address: " + slaveAddress + ", Port: " + slavePort);
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
 
-        int nMidPoint = (nEndPoint - nStartPoint) / 2 + nStartPoint;
+    private static void handleClient(Socket clientSocket) {
+        try {
+            DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
+            DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
+            int startPoint = dis.readInt();
+            int endPoint = dis.readInt();
 
-        // pass data to slave server 1 at port 5000
-        // replace "localhost with computer server's ipv4 address"
-        Socket slaveServerSocket1 = new Socket("localhost", 5000);
-        DataOutputStream dataOutputStream1 = new DataOutputStream(slaveServerSocket1.getOutputStream());
-        dataOutputStream1.writeInt(nStartPoint);
-        dataOutputStream1.writeInt(nMidPoint);
-        dataOutputStream1.writeInt(nThreads);
+            int rangeSize = (endPoint - startPoint + 1);
+            int rangePerSlave = rangeSize / slaves.size();
+            AtomicInteger totalPrimes = new AtomicInteger();
 
-        slaveServerSocket1.close();
+            List<Future<?>> futures = new ArrayList<>();
+            for (int i = 0; i < slaves.size(); i++) {
+                int finalI = i;
+                int slaveStartPoint = startPoint + i * rangePerSlave;
+                int slaveEndPoint = (i == slaves.size() - 1) ? endPoint : (slaveStartPoint + rangePerSlave - 1);
+                SlaveInfo slaveInfo = slaves.get(i);
+                // Submit slave handling as a Callable task to executor
+                futures.add(slaveExecutor.submit(() -> {
+                    try (Socket slaveSocket = new Socket(slaveInfo.getAddress(), slaveInfo.getPort())) {
+                        DataOutputStream slaveDos = new DataOutputStream(slaveSocket.getOutputStream());
+                        DataInputStream slaveDis = new DataInputStream(slaveSocket.getInputStream());
+                        slaveDos.writeInt(slaveStartPoint);
+                        slaveDos.writeInt(slaveEndPoint);
+                        totalPrimes.addAndGet(slaveDis.readInt()); // Receive prime count from slave
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }));
+            }
 
-        // pass data to slave server 2 at port 5001
-        // replace "localhost with computer server's ipv4 address"
-//        Socket slaveServerSocket2 = new Socket("localhost", 5001);
-//        DataOutputStream dataOutputStream2 = new DataOutputStream(slaveServerSocket2.getOutputStream());
-//        dataOutputStream2.writeInt(nMidPoint + 1);
-//        dataOutputStream2.writeInt(nEndPoint);
-//        dataOutputStream2.writeInt(nThreads);
-//
-//        slaveServerSocket2.close();
+            // Wait for all futures to complete
+            for (Future<?> future : futures) {
+                try {
+                    future.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            dos.writeInt(totalPrimes.get());
+        } catch (IOException ex) {
+            System.err.println("Error handling client: " + clientSocket);
+            ex.printStackTrace();
+        } finally {
+            try {
+                clientSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    static class SlaveInfo {
+        private String address;
+        private int port;
+
+        public SlaveInfo(String address, int port) {
+            this.address = address;
+            this.port = port;
+        }
+
+        public String getAddress() {
+            return address;
+        }
+
+        public int getPort() {
+            return port;
+        }
     }
 }
 

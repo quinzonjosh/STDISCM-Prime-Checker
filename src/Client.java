@@ -5,11 +5,11 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Client {
-    static int nStartPoint = 200;
-    static int nEndPoint = 300;
+    static int nStartPoint;
+    static int nEndPoint;
 
     public static void main(String[] args) {
-//        getUserInput();
+        getUserInput();
         sendDataToMasterServer();
         waitForResponse();
     }
@@ -74,6 +74,9 @@ public class Client {
         System.out.print("Input end point: ");
         nEndPoint = scanner.nextInt();
         scanner.nextLine(); // Consume the leftover newline from nextInt()
+
+        scanner.close();
+
     }
 
 }

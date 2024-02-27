@@ -18,11 +18,8 @@ public class SlaveServer {
 
 
     public static void main(String[] args) {
-
-        System.out.println("Slave server launched!");
         waitDataFromMasterServer();
         sendPrimesListToMasterServer();
-
     }
 
     private static void sendPrimesListToMasterServer() {
@@ -31,7 +28,7 @@ public class SlaveServer {
 
             DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
 
-            int sample = 483647;
+            int sample = 100;
 
             // send the size of the local primes
 //            dataOutputStream.writeInt(localPrimes.size());
@@ -53,7 +50,7 @@ public class SlaveServer {
 
     private static void waitDataFromMasterServer() {
 
-        try(ServerSocket slaveServerSocket = new ServerSocket(5000)){
+        try(ServerSocket slaveServerSocket = new ServerSocket(5001)){
 
             Socket masterServerSocket = slaveServerSocket.accept();
 

@@ -76,7 +76,7 @@ public class MasterServer {
 
         // pass data to slave server 1 at port 5000
         // replace "localhost with slave server's ipv4 address"
-        try (Socket slaveServerSocket1 = new Socket("localhost", 5000)){
+        try (Socket slaveServerSocket1 = new Socket("localhost", 5001)){
             DataOutputStream dataOutputStream1 = new DataOutputStream(slaveServerSocket1.getOutputStream());
             dataOutputStream1.writeInt(nStartPoint);
             dataOutputStream1.writeInt(nMidPoint);

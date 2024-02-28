@@ -2,28 +2,45 @@ import java.io.*;
 import java.net.*;
 
 public class SlaveServer {
-    private static final String MASTER_ADDRESS = "localhost";
+    private static final String DEFAULT_MASTER_ADDRESS = "localhost";
     private static final int MASTER_REGISTRATION_PORT = 5001; // Port for registering with the master
     private static final int DEFAULT_SLAVE_SERVICE_PORT = 5002; // Change for each slave if running on the same machine
 
     public static void main(String[] args) {
+        String masterAddress = DEFAULT_MASTER_ADDRESS;
         int slaveServicePort = DEFAULT_SLAVE_SERVICE_PORT;
 
-        // Check if a port number was provided (override) as an argument
-        if (args.length > 0) { // Check if there is at least one argument
-            try {
-                // Try to parse the first argument to an integer to use as the port
-                slaveServicePort = Integer.parseInt(args[0]);
-            } catch (NumberFormatException e) {
-                // If the argument cannot be parsed, print an error message and keep the default port
-                System.out.println("Invalid port number provided. Using default port: " + DEFAULT_SLAVE_SERVICE_PORT);
-            }
+        // Determine the number of arguments
+        switch (args.length) {
+            case 1:
+                // One argument - could be either masterAddress or slaveServicePort
+                // Example:
+                // - java SlaveServer 192.168.1.5
+                // - java SlaveServer 5003
+                if (args[0].matches("\\d+")) { // Simple check to see if arg is numeric
+                    slaveServicePort = Integer.parseInt(args[0]);
+                } else {
+                    masterAddress = args[0];
+                }
+                break;
+            case 2:
+                // Two arguments - first is masterAddress, second is slaveServicePort
+                // Example:
+                // - java SlaveServer 192.168.1.5 5003
+                masterAddress = args[0];
+                try {
+                    slaveServicePort = Integer.parseInt(args[1]);
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid port number provided. Using default port: " + DEFAULT_SLAVE_SERVICE_PORT);
+                }
+                break;
         }
 
-//        System.out.println("Using slaveServicePort: " + slaveServicePort);
+        System.out.println("Using masterAddress: " + masterAddress);
+        System.out.println("Using slaveServicePort: " + slaveServicePort);
 
         // First, register with the MasterServer
-        if (!registerWithMaster(MASTER_ADDRESS, slaveServicePort)) {
+        if (!registerWithMaster(masterAddress, slaveServicePort)) {
             return; // Terminate if registration with MasterServer fails
         }
 

@@ -17,6 +17,9 @@ public class Client {
                 System.out.print("Enter the number of threads to use: ");
                 int nThreads = scanner.nextInt();
 
+                // Start time is when the request is sent
+                long startTime = System.currentTimeMillis();
+                // Send task to Master Server
                 dos.writeInt(startPoint);
                 dos.writeInt(endPoint);
                 dos.writeInt(nThreads);
@@ -25,7 +28,10 @@ public class Client {
 
                 // Waiting for response from Master Server
                 int numberOfPrimes = dis.readInt();
+                // End time is when the response is received.
+                long endTime = System.currentTimeMillis();
                 System.out.println("Master Server responded with prime count: " + numberOfPrimes);
+                System.out.println("Time taken: " + (endTime - startTime) + " ms");
             }
         } catch (IOException e) {
             System.err.println("Could not connect to Master Server on localhost:4999");

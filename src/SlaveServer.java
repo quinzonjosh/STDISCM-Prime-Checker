@@ -1,15 +1,22 @@
 import java.io.*;
 import java.net.*;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class SlaveServer {
+    // CONSTANTS
     private static final String DEFAULT_MASTER_ADDRESS = "localhost";
     private static final int MASTER_REGISTRATION_PORT = 5001; // Port for registering with the master
     private static final int DEFAULT_SLAVE_SERVICE_PORT = 5002; // Change for each slave if running on the same machine
+    private static final int DEFAULT_THREAD_COUNT = 4; // Default number of threads for prime calculation
 
     public static void main(String[] args) {
         String masterAddress = DEFAULT_MASTER_ADDRESS;
         int slaveServicePort = DEFAULT_SLAVE_SERVICE_PORT;
 
+        // Process command-line arguments for custom parameters
         // Determine the number of arguments
         switch (args.length) {
             case 1:
@@ -45,26 +52,13 @@ public class SlaveServer {
         }
 
         // Now, listen for tasks from the MasterServer
-        System.out.println("Listening for tasks from Master Server on port " + slaveServicePort);
         try (ServerSocket serverSocket = new ServerSocket(slaveServicePort)) {
+            System.out.println("Listening for tasks from Master Server on port " + slaveServicePort);
+
             while (true) {
-                try (Socket masterSocket = serverSocket.accept();
-                     DataInputStream dis = new DataInputStream(masterSocket.getInputStream());
-                     DataOutputStream dos = new DataOutputStream(masterSocket.getOutputStream())) {
-
-                    System.out.println("Connected to Master Server for task.");
-                    int startPoint = dis.readInt();
-                    int endPoint = dis.readInt();
-                    System.out.println("Received task: Calculate primes between " + startPoint + " and " + endPoint);
-
-                    // This method should return the number of prime numbers found between startPoint and endPoint
-                    int numberOfPrimes = calculatePrimes(startPoint, endPoint);
-                    System.out.println("Calculated " + numberOfPrimes + " primes. Sending result to Master Server.");
-                    dos.writeInt(numberOfPrimes);
-                } catch (IOException ex) {
-                    System.err.println("An error occurred with the MasterServer connection.");
-                    ex.printStackTrace();
-                }
+                Socket masterSocket = serverSocket.accept();
+                System.out.println("Connected to Master Server for a task.");
+                handleTask(masterSocket);
             }
         } catch (IOException ex) {
             System.err.println("Could not listen on port " + slaveServicePort);
@@ -72,6 +66,7 @@ public class SlaveServer {
         }
     }
 
+    // Slave Server Registration with Master
     private static boolean registerWithMaster(String masterAddress, int listeningPort) {
         // Connect to the MasterServer's registration port and send this server's details
         System.out.println("Attempting to register with MasterServer...");
@@ -88,29 +83,83 @@ public class SlaveServer {
         }
     }
 
-    private static int calculatePrimes(int start, int end) {
-        int count = 0;
-        for (int i = start; i <= end; i++) {
-            if (isPrime(i)) {
-                count++;
-            }
+    // Handle Task: Compute Prime Numbers in Received Range
+    private static void handleTask(Socket masterSocket) {
+        try (DataInputStream dis = new DataInputStream(masterSocket.getInputStream());
+             DataOutputStream dos = new DataOutputStream(masterSocket.getOutputStream())) {
+
+            int startPoint = dis.readInt();
+            int endPoint = dis.readInt();
+            System.out.println("Received task: Calculate primes between " + startPoint + " and " + endPoint);
+
+            System.out.println("Using " + DEFAULT_THREAD_COUNT + " threads:");
+
+            // This method should return the number of prime numbers found between startPoint and endPoint
+            int primeCount = calculatePrimesWithThreads(startPoint, endPoint, DEFAULT_THREAD_COUNT);
+            System.out.println("Calculated " + primeCount + " primes. Sending result to Master Server.");
+            dos.writeInt(primeCount); // Send the calculated prime count back to MasterServer
+        } catch (IOException ex) {
+            System.err.println("Failed to handle task from master: An error occurred with the MasterServer connection.");
+            ex.printStackTrace();
         }
-        return count;
     }
 
-    /*
-    This function checks if an integer n is prime.
+    // Multithreaded Prime Calculation
+    private static int calculatePrimesWithThreads(int start, int end, int nThreads) {
+        List<Integer> primes = new CopyOnWriteArrayList<>();
+        ExecutorService executor = Executors.newFixedThreadPool(nThreads);
+        int rangePerThread = (end - start + 1) / nThreads;
 
-    Parameters:
-    n : int - integer to check
+        for (int i = 0; i < nThreads; i++) {
+            int threadStart = start + i * rangePerThread;
+            int threadEnd = i == nThreads - 1 ? end : threadStart + rangePerThread - 1;
 
-    Returns true if n is prime, and false otherwise.
-    */
-    private static boolean isPrime(int n) {
-        if (n <= 1) return false;
-        for (int i = 2; i * i <= n; i++) {
-            if (n % i == 0) return false;
+            executor.submit(new PrimeTask(threadStart, threadEnd, primes));
         }
-        return true;
+
+        executor.shutdown();
+        while (!executor.isTerminated()) {
+            // Wait for all tasks to finish
+        }
+
+        return primes.size();
+    }
+
+    // PrimeTask as a Runnable for Thread Execution
+    static class PrimeTask implements Runnable {
+        private final int start;
+        private final int end;
+        private final List<Integer> primes;
+
+        PrimeTask(int start, int end, List<Integer> primes) {
+            this.start = start;
+            this.end = end;
+            this.primes = primes;
+        }
+
+        @Override
+        public void run() {
+            for (int currentNum = start; currentNum <= end; currentNum++) {
+                if (isPrime(currentNum)) {
+                    primes.add(currentNum);
+                }
+            }
+        }
+
+        /*
+        This function checks if an integer n is prime.
+
+        Parameters:
+        n : int - integer to check
+
+        Returns true if n is prime, and false otherwise.
+        */
+        private boolean isPrime(int n) {
+            if (n <= 1) return false;
+            for (int i = 2; i * i <= n; i++) {
+                if (n % i == 0) return false;
+            }
+            return true;
+        }
     }
 }

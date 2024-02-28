@@ -55,6 +55,7 @@ public class MasterServer {
             DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
             int startPoint = dis.readInt();
             int endPoint = dis.readInt();
+            int nThreads = dis.readInt();
 
             int rangeSize = (endPoint - startPoint + 1);
             int rangePerSlave = rangeSize / slaves.size();
@@ -66,7 +67,7 @@ public class MasterServer {
                 int slaveStartPoint = startPoint + i * rangePerSlave;
                 int slaveEndPoint = (i == slaves.size() - 1) ? endPoint : (slaveStartPoint + rangePerSlave - 1);
                 SlaveInfo slaveInfo = slaves.get(i);
-                System.out.println("Sending task from client to slave " + slaveInfo.getAddress() + ":" + slaveInfo.getPort() + " - " + slaveStartPoint + " to " + slaveEndPoint);
+                System.out.println("Sending task from client to slave " + slaveInfo.getAddress() + ":" + slaveInfo.getPort() + " - " + slaveStartPoint + " to " + slaveEndPoint + " using " + nThreads + " threads.");
                 // Submit slave handling as a Callable task to executor
                 futures.add(slaveExecutor.submit(() -> {
                     try (Socket slaveSocket = new Socket(slaveInfo.getAddress(), slaveInfo.getPort())) {
@@ -74,6 +75,7 @@ public class MasterServer {
                         DataInputStream slaveDis = new DataInputStream(slaveSocket.getInputStream());
                         slaveDos.writeInt(slaveStartPoint);
                         slaveDos.writeInt(slaveEndPoint);
+                        slaveDos.writeInt(nThreads);
                         totalPrimes.addAndGet(slaveDis.readInt()); // Receive prime count from slave
                     } catch (IOException e) {
                         e.printStackTrace();

@@ -14,11 +14,14 @@ public class Client {
                 int startPoint = scanner.nextInt();
                 System.out.print("Enter end point: ");
                 int endPoint = scanner.nextInt();
+                System.out.print("Enter the number of threads to use: ");
+                int nThreads = scanner.nextInt();
 
                 dos.writeInt(startPoint);
                 dos.writeInt(endPoint);
+                dos.writeInt(nThreads);
 
-                System.out.println("Sent task: Find primes between " + startPoint + " and " + endPoint);
+                System.out.println("Sent task: Find primes between " + startPoint + " and " + endPoint + " using " + nThreads + " threads.");
 
                 // Waiting for response from Master Server
                 int numberOfPrimes = dis.readInt();

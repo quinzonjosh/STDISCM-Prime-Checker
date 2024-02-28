@@ -12,7 +12,6 @@ public class SlaveServer {
     private static final String DEFAULT_MASTER_ADDRESS = "localhost";
     private static final int MASTER_REGISTRATION_PORT = 5001; // Port for registering with the master
     private static final int DEFAULT_SLAVE_SERVICE_PORT = 5002; // Change for each slave if running on the same machine
-    private static final int DEFAULT_THREAD_COUNT = 4; // Default number of threads for prime calculation
 
     public static void main(String[] args) {
         String masterAddress = DEFAULT_MASTER_ADDRESS;
@@ -92,12 +91,13 @@ public class SlaveServer {
 
             int startPoint = dis.readInt();
             int endPoint = dis.readInt();
+            int nThreads = dis.readInt();
             System.out.println("Received task: Calculate primes between " + startPoint + " and " + endPoint);
 
-            System.out.println("Using " + DEFAULT_THREAD_COUNT + " threads:");
+            System.out.println("Using " + nThreads + " threads:");
 
             // This method should return the number of prime numbers found between startPoint and endPoint
-            int primeCount = calculatePrimesWithThreads(startPoint, endPoint, DEFAULT_THREAD_COUNT);
+            int primeCount = calculatePrimesWithThreads(startPoint, endPoint, nThreads);
             System.out.println("Calculated " + primeCount + " primes. Sending result to Master Server.");
             dos.writeInt(primeCount); // Send the calculated prime count back to MasterServer
         } catch (IOException ex) {

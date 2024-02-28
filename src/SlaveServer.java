@@ -4,17 +4,32 @@ import java.net.*;
 public class SlaveServer {
     private static final String MASTER_ADDRESS = "localhost";
     private static final int MASTER_REGISTRATION_PORT = 5001; // Port for registering with the master
-    private static final int SLAVE_SERVICE_PORT = 5002; // Change for each slave if running on the same machine
+    private static final int DEFAULT_SLAVE_SERVICE_PORT = 5002; // Change for each slave if running on the same machine
 
     public static void main(String[] args) {
+        int slaveServicePort = DEFAULT_SLAVE_SERVICE_PORT;
+
+        // Check if a port number was provided (override) as an argument
+        if (args.length > 0) { // Check if there is at least one argument
+            try {
+                // Try to parse the first argument to an integer to use as the port
+                slaveServicePort = Integer.parseInt(args[0]);
+            } catch (NumberFormatException e) {
+                // If the argument cannot be parsed, print an error message and keep the default port
+                System.out.println("Invalid port number provided. Using default port: " + DEFAULT_SLAVE_SERVICE_PORT);
+            }
+        }
+
+//        System.out.println("Using slaveServicePort: " + slaveServicePort);
+
         // First, register with the MasterServer
-        if (!registerWithMaster(MASTER_ADDRESS, SLAVE_SERVICE_PORT)) {
+        if (!registerWithMaster(MASTER_ADDRESS, slaveServicePort)) {
             return; // Terminate if registration with MasterServer fails
         }
 
         // Now, listen for tasks from the MasterServer
-        System.out.println("Listening for tasks from Master Server on port " + SLAVE_SERVICE_PORT);
-        try (ServerSocket serverSocket = new ServerSocket(SLAVE_SERVICE_PORT)) {
+        System.out.println("Listening for tasks from Master Server on port " + slaveServicePort);
+        try (ServerSocket serverSocket = new ServerSocket(slaveServicePort)) {
             while (true) {
                 try (Socket masterSocket = serverSocket.accept();
                      DataInputStream dis = new DataInputStream(masterSocket.getInputStream());
@@ -35,7 +50,7 @@ public class SlaveServer {
                 }
             }
         } catch (IOException ex) {
-            System.err.println("Could not listen on port " + SLAVE_SERVICE_PORT);
+            System.err.println("Could not listen on port " + slaveServicePort);
             ex.printStackTrace();
         }
     }

@@ -66,6 +66,7 @@ public class MasterServer {
                 int slaveStartPoint = startPoint + i * rangePerSlave;
                 int slaveEndPoint = (i == slaves.size() - 1) ? endPoint : (slaveStartPoint + rangePerSlave - 1);
                 SlaveInfo slaveInfo = slaves.get(i);
+                System.out.println("Sending task from client to slave " + slaveInfo.getAddress() + ":" + slaveInfo.getPort() + " - " + slaveStartPoint + " to " + slaveEndPoint);
                 // Submit slave handling as a Callable task to executor
                 futures.add(slaveExecutor.submit(() -> {
                     try (Socket slaveSocket = new Socket(slaveInfo.getAddress(), slaveInfo.getPort())) {

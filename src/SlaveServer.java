@@ -41,7 +41,7 @@ public class SlaveServer {
 
         // First, register with the MasterServer
         if (!registerWithMaster(masterAddress, slaveServicePort)) {
-            return; // Terminate if registration with MasterServer fails
+            System.exit(1); // Exit if registration with MasterServer fails
         }
 
         // Now, listen for tasks from the MasterServer

@@ -1,9 +1,11 @@
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class SlaveServer {
     // CONSTANTS
@@ -106,7 +108,8 @@ public class SlaveServer {
 
     // Multithreaded Prime Calculation
     private static int calculatePrimesWithThreads(int start, int end, int nThreads) {
-        List<Integer> primes = new CopyOnWriteArrayList<>();
+        List<Integer> primes = new ArrayList<>();
+        Lock primesLock = new ReentrantLock();
         ExecutorService executor = Executors.newFixedThreadPool(nThreads);
         int rangePerThread = (end - start + 1) / nThreads;
 
@@ -114,7 +117,7 @@ public class SlaveServer {
             int threadStart = start + i * rangePerThread;
             int threadEnd = i == nThreads - 1 ? end : threadStart + rangePerThread - 1;
 
-            executor.submit(new PrimeTask(threadStart, threadEnd, primes));
+            executor.submit(new PrimeTask(threadStart, threadEnd, primes, primesLock));
         }
 
         executor.shutdown();
@@ -130,18 +133,25 @@ public class SlaveServer {
         private final int start;
         private final int end;
         private final List<Integer> primes;
+        private final Lock lock;
 
-        PrimeTask(int start, int end, List<Integer> primes) {
+        PrimeTask(int start, int end, List<Integer> primes, Lock lock) {
             this.start = start;
             this.end = end;
             this.primes = primes;
+            this.lock = lock;
         }
 
         @Override
         public void run() {
             for (int currentNum = start; currentNum <= end; currentNum++) {
                 if (isPrime(currentNum)) {
-                    primes.add(currentNum);
+                    lock.lock();
+                    try {
+                        primes.add(currentNum);
+                    } finally {
+                        lock.unlock();
+                    }
                 }
             }
         }

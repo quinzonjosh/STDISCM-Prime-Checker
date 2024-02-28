@@ -92,9 +92,7 @@ public class SlaveServer {
             int startPoint = dis.readInt();
             int endPoint = dis.readInt();
             int nThreads = dis.readInt();
-            System.out.println("Received task: Calculate primes between " + startPoint + " and " + endPoint);
-
-            System.out.println("Using " + nThreads + " threads:");
+            System.out.println("Received task: Calculate primes between " + startPoint + " and " + endPoint + " using " + nThreads + " threads.");
 
             // This method should return the number of prime numbers found between startPoint and endPoint
             int primeCount = calculatePrimesWithThreads(startPoint, endPoint, nThreads);

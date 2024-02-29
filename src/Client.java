@@ -1,82 +1,73 @@
 import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.ArrayList;
+import java.net.*;
 import java.util.Scanner;
 
 public class Client {
-    static int nStartPoint;
-    static int nEndPoint;
+    // CONSTANTS
+    private static final String DEFAULT_MASTER_ADDRESS = "localhost";
 
     public static void main(String[] args) {
-        getUserInput();
-        sendDataToMasterServer();
-        waitForResponse();
-    }
+        String masterAddress = DEFAULT_MASTER_ADDRESS;
 
-    private static void waitForResponse(){
+        // Check if a custom address was provided as an argument
+        if (args.length > 0) { // Check if there is at least one argument
+            masterAddress = args[0];
+        }
 
-        try(ServerSocket clientServerSocket = new ServerSocket(4998)){
+        try (Socket socket = new Socket(masterAddress, 4999)) {
+            System.out.println("Connected to Master Server at " + masterAddress + ":4999");
+            try(DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+                DataInputStream dis = new DataInputStream(socket.getInputStream())) {
 
-            System.out.println("Please wait for master server to process your data...");
+                Scanner scanner = new Scanner(System.in);
+                System.out.print("Enter start point: ");
+                int startPoint = scanner.nextInt();
+                System.out.print("Enter end point: ");
+                int endPoint = scanner.nextInt();
+                System.out.print("Enter the number of threads to use: ");
+                int nThreads = scanner.nextInt();
 
-            // continuously accept incoming master server response
-            while(true){
-                Socket masterServerSocket = clientServerSocket.accept();
+                // Start time is when the request is sent
+                long startTime = System.currentTimeMillis();
+                // Send task to Master Server
+                dos.writeInt(startPoint);
+                dos.writeInt(endPoint);
+                dos.writeInt(nThreads);
 
-                DataInputStream dataInputStream = new DataInputStream(masterServerSocket.getInputStream());
+                System.out.println("Sent task: Find primes between " + startPoint + " and " + endPoint + " using " + nThreads + " threads.");
 
-                // receive the total number of primes from the master server
-                int primesListSize = dataInputStream.readInt();
+                // Waiting for response from Master Server
+                int numberOfPrimes = dis.readInt();
+                // End time is when the response is received.
+                long endTime = System.currentTimeMillis();
+                System.out.println("Master Server responded with prime count: " + numberOfPrimes);
+                System.out.println("Time taken: " + (endTime - startTime) + " ms");
 
-                System.out.println("Primes list");
-                // print primes list
-                for(int i=0; i<primesListSize; i++){
-                    System.out.println(dataInputStream.readInt() + " ");
-                }
-
+//                // SANITY CHECK
+//                if (isPrimeCountPlausible(startPoint, endPoint, numberOfPrimes)) {
+//                    System.out.println("SANITY CHECK: Using Prime Number Theorem, the prime count is plausible.");
+//                } else {
+//                    System.out.println("SANITY CHECK: Using Prime Number Theorem, the prime count is NOT plausible.");
+//                }
             }
-        } catch (IOException e){
+        } catch (IOException e) {
+            System.err.println("Could not connect to Master Server on " + masterAddress + ":4999");
             e.printStackTrace();
-        }
-
-    }
-
-    private static void sendDataToMasterServer() {
-        // ServerSocket constructor params:
-        // param 1: server IP address
-        //      - on the computer of the server, open cmd, type ipconfig and get the ipv4 address
-        // param 2: port number to use
-
-        // create socket to connect client to master server at port 4999
-        try{
-            // connect to master server
-            Socket socket = new Socket("localhost", 4999);
-            DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-
-            dataOutputStream.writeInt(nStartPoint);
-            dataOutputStream.writeInt(nEndPoint);
-
-            socket.close();
-        } catch (IOException e){
-            e.printStackTrace();
+            return; // Exits the client if it fails to connect to the MasterServer
         }
     }
 
-    private static void getUserInput() {
-        Scanner scanner = new Scanner(System.in);
-
-        // USER INPUT
-        System.out.print("Input start point: ");
-        nStartPoint = scanner.nextInt();
-        scanner.nextLine(); // Consume the leftover newline from nextInt()
-
-        System.out.print("Input end point: ");
-        nEndPoint = scanner.nextInt();
-        scanner.nextLine(); // Consume the leftover newline from nextInt()
-
-        scanner.close();
-
-    }
-
+//    // SANITY CHECK METHODS
+//    // Check if the reported prime count is plausible
+//    public static boolean isPrimeCountPlausible(int start, int end, int reportedPrimeCount) {
+//        double estimatedPrimeCount = (estimatePrimesUpTo(end) - estimatePrimesUpTo(start));
+//        // Allow some tolerance
+//        double tolerance = 0.05 * estimatedPrimeCount;
+//        System.out.println("Estimated prime count: " + estimatedPrimeCount);
+//        return Math.abs(reportedPrimeCount - estimatedPrimeCount) <= tolerance;
+//    }
+//    // Estimating the number of primes less than or equal to n using the Prime Number Theorem
+//    public static double estimatePrimesUpTo(int n) {
+//        return n / Math.log(n);
+//    }
 }

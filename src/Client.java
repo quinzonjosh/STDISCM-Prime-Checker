@@ -42,6 +42,13 @@ public class Client {
                 long endTime = System.currentTimeMillis();
                 System.out.println("Master Server responded with prime count: " + numberOfPrimes);
                 System.out.println("Time taken: " + (endTime - startTime) + " ms");
+
+//                // SANITY CHECK
+//                if (isPrimeCountPlausible(startPoint, endPoint, numberOfPrimes)) {
+//                    System.out.println("SANITY CHECK: Using Prime Number Theorem, the prime count is plausible.");
+//                } else {
+//                    System.out.println("SANITY CHECK: Using Prime Number Theorem, the prime count is NOT plausible.");
+//                }
             }
         } catch (IOException e) {
             System.err.println("Could not connect to Master Server on " + masterAddress + ":4999");
@@ -49,4 +56,18 @@ public class Client {
             return; // Exits the client if it fails to connect to the MasterServer
         }
     }
+
+//    // SANITY CHECK METHODS
+//    // Check if the reported prime count is plausible
+//    public static boolean isPrimeCountPlausible(int start, int end, int reportedPrimeCount) {
+//        double estimatedPrimeCount = (estimatePrimesUpTo(end) - estimatePrimesUpTo(start));
+//        // Allow some tolerance
+//        double tolerance = 0.05 * estimatedPrimeCount;
+//        System.out.println("Estimated prime count: " + estimatedPrimeCount);
+//        return Math.abs(reportedPrimeCount - estimatedPrimeCount) <= tolerance;
+//    }
+//    // Estimating the number of primes less than or equal to n using the Prime Number Theorem
+//    public static double estimatePrimesUpTo(int n) {
+//        return n / Math.log(n);
+//    }
 }

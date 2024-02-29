@@ -3,9 +3,19 @@ import java.net.*;
 import java.util.Scanner;
 
 public class Client {
+    // CONSTANTS
+    private static final String DEFAULT_MASTER_ADDRESS = "localhost";
+
     public static void main(String[] args) {
-        try (Socket socket = new Socket("localhost", 4999)) {
-            System.out.println("Connected to Master Server at localhost:4999");
+        String masterAddress = DEFAULT_MASTER_ADDRESS;
+
+        // Check if a custom address was provided as an argument
+        if (args.length > 0) { // Check if there is at least one argument
+            masterAddress = args[0];
+        }
+
+        try (Socket socket = new Socket(masterAddress, 4999)) {
+            System.out.println("Connected to Master Server at " + masterAddress + ":4999");
             try(DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
                 DataInputStream dis = new DataInputStream(socket.getInputStream())) {
 
@@ -34,7 +44,7 @@ public class Client {
                 System.out.println("Time taken: " + (endTime - startTime) + " ms");
             }
         } catch (IOException e) {
-            System.err.println("Could not connect to Master Server on localhost:4999");
+            System.err.println("Could not connect to Master Server on " + masterAddress + ":4999");
             e.printStackTrace();
             return; // Exits the client if it fails to connect to the MasterServer
         }

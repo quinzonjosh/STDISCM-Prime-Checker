@@ -73,7 +73,8 @@ public class SlaveServer {
         System.out.println("Attempting to register with MasterServer...");
         try (Socket socket = new Socket(masterAddress, MASTER_REGISTRATION_PORT);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
-            out.println(InetAddress.getLocalHost().getHostAddress()); // Send slave server's IP address
+//            System.out.println("My IP Address: " + InetAddress.getLocalHost().getHostAddress());
+//            out.println(InetAddress.getLocalHost().getHostAddress()); // Send slave server's IP address
             out.println(listeningPort); // Send the port on which this slave server is listening
             System.out.println("Successfully registered with MasterServer.");
             return true;

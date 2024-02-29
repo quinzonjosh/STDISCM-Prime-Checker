@@ -39,12 +39,15 @@ public class MasterServer {
             while (true) {
                 Socket slaveSocket = slaveListener.accept();
                 BufferedReader input = new BufferedReader(new InputStreamReader(slaveSocket.getInputStream()));
-                String slaveAddress = input.readLine();
+//                System.out.println(slaveSocket.getInetAddress().getHostAddress());
+//                String slaveAddress = input.readLine();
+                String slaveAddress = slaveSocket.getInetAddress().getHostAddress();
                 int slavePort = Integer.parseInt(input.readLine());
                 slaves.add(new SlaveInfo(slaveAddress, slavePort));
                 System.out.println("Registered new slave - Address: " + slaveAddress + ", Port: " + slavePort);
             }
         } catch (IOException ex) {
+            System.err.println("Master Server encountered an error: " + ex.getMessage());
             ex.printStackTrace();
         }
     }

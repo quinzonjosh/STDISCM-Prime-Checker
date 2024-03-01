@@ -21,10 +21,21 @@ public class MasterServer {
         // try-with-resources: ServerSocket aumatically closes after try block for proper cleaning of resources
         try (ServerSocket serverSocket = new ServerSocket(CLIENT_PORT)) {
             System.out.println("Master Server Listening for clients on port " + CLIENT_PORT);
-            while (true) {
-                Socket clientSocket = serverSocket.accept();
-                clientExecutor.submit(() -> handleClient(clientSocket));
+
+            while(slaves.size() < 2){
+                continue;
             }
+
+            for (int i = 1024; i > 0 ; i /= 2) {
+                System.out.println("Current nThreads: " + i);
+                handleClient(i);
+            }
+
+
+//            while (true) {
+////                Socket clientSocket = serverSocket.accept();
+////                clientExecutor.submit(() -> handleClient(clientSocket));
+//            }
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
@@ -49,6 +60,77 @@ public class MasterServer {
         } catch (IOException ex) {
             System.err.println("Master Server encountered an error: " + ex.getMessage());
             ex.printStackTrace();
+        }
+    }
+
+    private static void handleClient(int nThreads) {
+        try {
+
+            for (int i = 0; i < 5; i++) {
+
+                long startTime = System.currentTimeMillis();
+
+                List<Future<?>> futures = new ArrayList<>();
+                AtomicInteger totalPrimes = new AtomicInteger();
+
+                int startPoint = 1;
+                int endPoint = 100000000;
+
+                if (startPoint % 2 == 0){
+                    startPoint++;
+                }
+
+
+                for (int j = 0; j < slaves.size(); j++) {
+                    SlaveInfo slaveInfo = slaves.get(j);
+//                System.out.println("Sending task from client to slave " + slaveInfo.getAddress() + ":" + slaveInfo.getPort() + " - " + slaveStartPoint + " to " + slaveEndPoint + " using " + nThreads + " threads.");
+                    // Submit slave handling as a Callable task to executor
+                    int finalI = j;
+                    int finalStartPoint = startPoint;
+                    futures.add(slaveExecutor.submit(() -> {
+                        try (Socket slaveSocket = new Socket(slaveInfo.getAddress(), slaveInfo.getPort())) {
+                            DataOutputStream slaveDos = new DataOutputStream(slaveSocket.getOutputStream());
+                            DataInputStream slaveDis = new DataInputStream(slaveSocket.getInputStream());
+
+                            slaveDos.writeInt(nThreads);
+                            for (int num = finalStartPoint + (2 * finalI); num <= endPoint; num += (2 * slaves.size())) {
+                                slaveDos.writeInt(num);
+                            }
+                            slaveDos.writeInt(-1);
+
+                            totalPrimes.addAndGet(slaveDis.readInt()); // Receive prime count from slave
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }));
+                }
+
+
+                // Wait for all futures to complete
+                for (Future<?> future : futures) {
+                    try {
+                        future.get();
+                    } catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                long endTime = System.currentTimeMillis();
+
+                System.out.println("Master Server responded with prime count: " + totalPrimes.get());
+                System.out.println((endTime - startTime));
+
+            }
+
+        } catch (Exception ex) {
+//            System.err.println("Error handling client: " + clientSocket);
+            ex.printStackTrace();
+        } finally {
+//            try {
+//                clientSocket.close();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
         }
     }
 

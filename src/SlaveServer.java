@@ -90,13 +90,40 @@ public class SlaveServer {
         try (DataInputStream dis = new DataInputStream(masterSocket.getInputStream());
              DataOutputStream dos = new DataOutputStream(masterSocket.getOutputStream())) {
 
-            int startPoint = dis.readInt();
-            int endPoint = dis.readInt();
-            int nThreads = dis.readInt();
-            System.out.println("Received task: Calculate primes between " + startPoint + " and " + endPoint + " using " + nThreads + " threads.");
 
-            // This method should return the number of prime numbers found between startPoint and endPoint
-            int primeCount = calculatePrimesWithThreads(startPoint, endPoint, nThreads);
+            int nThreads = dis.readInt();
+
+            List<Integer> primes = new ArrayList<>();
+            Lock primesLock = new ReentrantLock();
+            ExecutorService executor = Executors.newFixedThreadPool(nThreads);
+
+            int num;
+            do {
+                num = dis.readInt();
+                if (num != -1) {
+                    executor.submit(new PrimeTask(num, primes, primesLock));
+                }
+            } while (num != -1);
+
+
+            executor.shutdown();
+            while (!executor.isTerminated()) {
+                // Wait for all tasks to finish
+            }
+
+
+//            int startPoint = dis.readInt();
+//            int endPoint = dis.readInt();
+//
+//            System.out.println("Received task: Calculate primes between " + startPoint + " and " + endPoint + " using " + nThreads + " threads.");
+//
+//            // This method should return the number of prime numbers found between startPoint and endPoint
+//            int primeCount = calculatePrimesWithThreads(startPoint, endPoint, nThreads);
+
+            for (Integer prime: primes){
+                System.out.println(prime);
+            }
+            int primeCount = primes.size();
             System.out.println("Calculated " + primeCount + " primes. Sending result to Master Server.");
             dos.writeInt(primeCount); // Send the calculated prime count back to MasterServer
         } catch (IOException ex) {
@@ -105,52 +132,57 @@ public class SlaveServer {
         }
     }
 
-    // Multithreaded Prime Calculation
-    private static int calculatePrimesWithThreads(int start, int end, int nThreads) {
-        List<Integer> primes = new ArrayList<>();
-        Lock primesLock = new ReentrantLock();
-        ExecutorService executor = Executors.newFixedThreadPool(nThreads);
-        int rangePerThread = (end - start + 1) / nThreads;
-
-        for (int i = 0; i < nThreads; i++) {
-            int threadStart = start + i * rangePerThread;
-            int threadEnd = i == nThreads - 1 ? end : threadStart + rangePerThread - 1;
-
-            executor.submit(new PrimeTask(threadStart, threadEnd, primes, primesLock));
-        }
-
-        executor.shutdown();
-        while (!executor.isTerminated()) {
-            // Wait for all tasks to finish
-        }
-
-        return primes.size();
-    }
+//    // Multithreaded Prime Calculation
+//    private static int calculatePrimesWithThreads(int start, int end, int nThreads) {
+//        List<Integer> primes = new ArrayList<>();
+//        Lock primesLock = new ReentrantLock();
+//        ExecutorService executor = Executors.newFixedThreadPool(nThreads);
+//
+//
+//
+//
+//
+////        int rangePerThread = (end - start + 1) / nThreads;
+////
+////        for (int i = 0; i < nThreads; i++) {
+////            int threadStart = start + i * rangePerThread;
+////            int threadEnd = i == nThreads - 1 ? end : threadStart + rangePerThread - 1;
+////
+////            executor.submit(new PrimeTask(threadStart, threadEnd, primes, primesLock));
+////        }
+//
+//        executor.shutdown();
+//        while (!executor.isTerminated()) {
+//            // Wait for all tasks to finish
+//        }
+//
+//        return primes.size();
+//    }
 
     // PrimeTask as a Runnable for Thread Execution
     static class PrimeTask implements Runnable {
-        private final int start;
-        private final int end;
+//        private final int start;
+//        private final int end;
         private final List<Integer> primes;
         private final Lock lock;
+        private final int num;
 
-        PrimeTask(int start, int end, List<Integer> primes, Lock lock) {
-            this.start = start;
-            this.end = end;
+        PrimeTask(int num, List<Integer> primes, Lock lock) {
+//            this.start = start;
+//            this.end = end;
             this.primes = primes;
             this.lock = lock;
+            this.num = num;
         }
 
         @Override
         public void run() {
-            for (int currentNum = start; currentNum <= end; currentNum++) {
-                if (isPrime(currentNum)) {
-                    lock.lock();
-                    try {
-                        primes.add(currentNum);
-                    } finally {
-                        lock.unlock();
-                    }
+            if (isPrime(num)){
+                lock.lock();
+                try {
+                    primes.add(num);
+                } finally {
+                    lock.unlock();
                 }
             }
         }

@@ -54,17 +54,51 @@ public class MasterServer {
 
     private static void handleClient(Socket clientSocket) {
         try {
+            List<Future<?>> futures = new ArrayList<>();
+            AtomicInteger totalPrimes = new AtomicInteger();
             DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
             DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
             int startPoint = dis.readInt();
             int endPoint = dis.readInt();
             int nThreads = dis.readInt();
 
+            if (startPoint % 2 == 0){
+                startPoint++;
+            }
+
+
+            for (int i = 0; i < slaves.size(); i++) {
+                SlaveInfo slaveInfo = slaves.get(i);
+//                System.out.println("Sending task from client to slave " + slaveInfo.getAddress() + ":" + slaveInfo.getPort() + " - " + slaveStartPoint + " to " + slaveEndPoint + " using " + nThreads + " threads.");
+                // Submit slave handling as a Callable task to executor
+                int finalI = i;
+                int finalStartPoint = startPoint;
+                futures.add(slaveExecutor.submit(() -> {
+                    try (Socket slaveSocket = new Socket(slaveInfo.getAddress(), slaveInfo.getPort())) {
+                        DataOutputStream slaveDos = new DataOutputStream(slaveSocket.getOutputStream());
+                        DataInputStream slaveDis = new DataInputStream(slaveSocket.getInputStream());
+
+                        slaveDos.writeInt(nThreads);
+                        for (int num = finalStartPoint + (2 * finalI); num <= endPoint; num += (2 * slaves.size())) {
+                            slaveDos.writeInt(num);
+                        }
+                        slaveDos.writeInt(-1);
+
+
+                        totalPrimes.addAndGet(slaveDis.readInt()); // Receive prime count from slave
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }));
+            }
+
+
+            /*
             int rangeSize = (endPoint - startPoint + 1);
             int rangePerSlave = rangeSize / slaves.size();
             AtomicInteger totalPrimes = new AtomicInteger();
 
-            List<Future<?>> futures = new ArrayList<>();
+
             for (int i = 0; i < slaves.size(); i++) {
                 int finalI = i;
                 int slaveStartPoint = startPoint + i * rangePerSlave;
@@ -85,6 +119,9 @@ public class MasterServer {
                     }
                 }));
             }
+
+
+             */
 
             // Wait for all futures to complete
             for (Future<?> future : futures) {

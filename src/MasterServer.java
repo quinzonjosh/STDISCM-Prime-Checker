@@ -22,20 +22,24 @@ public class MasterServer {
         try (ServerSocket serverSocket = new ServerSocket(CLIENT_PORT)) {
             System.out.println("Master Server Listening for clients on port " + CLIENT_PORT);
 
-            while(slaves.size() < 2){
-                continue;
+
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
+                clientExecutor.submit(() -> handleClient(clientSocket));
             }
 
-            for (int i = 1024; i > 0 ; i /= 2) {
-                System.out.println("Current nThreads: " + i);
-                handleClient(i);
-            }
-
-
-//            while (true) {
-////                Socket clientSocket = serverSocket.accept();
-////                clientExecutor.submit(() -> handleClient(clientSocket));
+            //THIS IS FOR EXPERIMENTAL
+//            while(slaves.size() < 2){
+//                continue;
 //            }
+
+//            for (int i = 1; i <= 1024 ; i *= 2) {
+//                System.out.println("Current nThreads: " + i);
+//                handleClient(i);
+//            }
+
+
+
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
@@ -50,8 +54,6 @@ public class MasterServer {
             while (true) {
                 Socket slaveSocket = slaveListener.accept();
                 BufferedReader input = new BufferedReader(new InputStreamReader(slaveSocket.getInputStream()));
-//                System.out.println(slaveSocket.getInetAddress().getHostAddress());
-//                String slaveAddress = input.readLine();
                 String slaveAddress = slaveSocket.getInetAddress().getHostAddress();
                 int slavePort = Integer.parseInt(input.readLine());
                 slaves.add(new SlaveInfo(slaveAddress, slavePort));
@@ -80,10 +82,8 @@ public class MasterServer {
                     startPoint++;
                 }
 
-
                 for (int j = 0; j < slaves.size(); j++) {
                     SlaveInfo slaveInfo = slaves.get(j);
-//                System.out.println("Sending task from client to slave " + slaveInfo.getAddress() + ":" + slaveInfo.getPort() + " - " + slaveStartPoint + " to " + slaveEndPoint + " using " + nThreads + " threads.");
                     // Submit slave handling as a Callable task to executor
                     int finalI = j;
                     int finalStartPoint = startPoint;
@@ -117,21 +117,14 @@ public class MasterServer {
 
                 long endTime = System.currentTimeMillis();
 
-                System.out.println("Master Server responded with prime count: " + totalPrimes.get());
+                System.out.println("Master Server responded with prime count: " + totalPrimes.get() + 1);
                 System.out.println((endTime - startTime));
-
             }
 
         } catch (Exception ex) {
-//            System.err.println("Error handling client: " + clientSocket);
             ex.printStackTrace();
-        } finally {
-//            try {
-//                clientSocket.close();
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
         }
+
     }
 
     private static void handleClient(Socket clientSocket) {
@@ -151,7 +144,6 @@ public class MasterServer {
 
             for (int i = 0; i < slaves.size(); i++) {
                 SlaveInfo slaveInfo = slaves.get(i);
-//                System.out.println("Sending task from client to slave " + slaveInfo.getAddress() + ":" + slaveInfo.getPort() + " - " + slaveStartPoint + " to " + slaveEndPoint + " using " + nThreads + " threads.");
                 // Submit slave handling as a Callable task to executor
                 int finalI = i;
                 int finalStartPoint = startPoint;
@@ -166,44 +158,12 @@ public class MasterServer {
                         }
                         slaveDos.writeInt(-1);
 
-
                         totalPrimes.addAndGet(slaveDis.readInt()); // Receive prime count from slave
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }));
             }
-
-
-            /*
-            int rangeSize = (endPoint - startPoint + 1);
-            int rangePerSlave = rangeSize / slaves.size();
-            AtomicInteger totalPrimes = new AtomicInteger();
-
-
-            for (int i = 0; i < slaves.size(); i++) {
-                int finalI = i;
-                int slaveStartPoint = startPoint + i * rangePerSlave;
-                int slaveEndPoint = (i == slaves.size() - 1) ? endPoint : (slaveStartPoint + rangePerSlave - 1);
-                SlaveInfo slaveInfo = slaves.get(i);
-                System.out.println("Sending task from client to slave " + slaveInfo.getAddress() + ":" + slaveInfo.getPort() + " - " + slaveStartPoint + " to " + slaveEndPoint + " using " + nThreads + " threads.");
-                // Submit slave handling as a Callable task to executor
-                futures.add(slaveExecutor.submit(() -> {
-                    try (Socket slaveSocket = new Socket(slaveInfo.getAddress(), slaveInfo.getPort())) {
-                        DataOutputStream slaveDos = new DataOutputStream(slaveSocket.getOutputStream());
-                        DataInputStream slaveDis = new DataInputStream(slaveSocket.getInputStream());
-                        slaveDos.writeInt(slaveStartPoint);
-                        slaveDos.writeInt(slaveEndPoint);
-                        slaveDos.writeInt(nThreads);
-                        totalPrimes.addAndGet(slaveDis.readInt()); // Receive prime count from slave
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }));
-            }
-
-
-             */
 
             // Wait for all futures to complete
             for (Future<?> future : futures) {

@@ -11,7 +11,7 @@ public class SlaveServer {
     // CONSTANTS
     private static final String DEFAULT_MASTER_ADDRESS = "localhost";
     private static final int MASTER_REGISTRATION_PORT = 5001; // Port for registering with the master
-    private static final int DEFAULT_SLAVE_SERVICE_PORT = 5002; // Change for each slave if running on the same machine
+    private static final int DEFAULT_SLAVE_SERVICE_PORT = 5003; // Change for each slave if running on the same machine
 
     public static void main(String[] args) {
         String masterAddress = DEFAULT_MASTER_ADDRESS;
@@ -120,9 +120,9 @@ public class SlaveServer {
 //            // This method should return the number of prime numbers found between startPoint and endPoint
 //            int primeCount = calculatePrimesWithThreads(startPoint, endPoint, nThreads);
 
-            for (Integer prime: primes){
-                System.out.println(prime);
-            }
+//            for (Integer prime: primes){
+//                System.out.println(prime);
+//            }
             int primeCount = primes.size();
             System.out.println("Calculated " + primeCount + " primes. Sending result to Master Server.");
             dos.writeInt(primeCount); // Send the calculated prime count back to MasterServer

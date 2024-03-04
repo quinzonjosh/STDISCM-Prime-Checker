@@ -90,15 +90,21 @@ public class SlaveServer {
         try (DataInputStream dis = new DataInputStream(masterSocket.getInputStream());
              DataOutputStream dos = new DataOutputStream(masterSocket.getOutputStream())) {
 
-            int startPoint = dis.readInt();
-            int endPoint = dis.readInt();
             int nThreads = dis.readInt();
-            System.out.println("Received task: Calculate primes between " + startPoint + " and " + endPoint + " using " + nThreads + " threads.");
+            int size = dis.readInt();
+            System.out.println("numbers list count: " + size);
+
+            ArrayList<Integer> numbersList = new ArrayList<>();
+            for(int num = 0; num < size; num++){
+                numbersList.add(dis.readInt());
+            }
+
+            System.out.println("Numbers received: " + numbersList);
 
             // This method should return the number of prime numbers found between startPoint and endPoint
-            int primeCount = calculatePrimesWithThreads(startPoint, endPoint, nThreads);
-            System.out.println("Calculated " + primeCount + " primes. Sending result to Master Server.");
-            dos.writeInt(primeCount); // Send the calculated prime count back to MasterServer
+//            int primeCount = calculatePrimesWithThreads(startPoint, endPoint, nThreads);
+//            System.out.println("Calculated " + primeCount + " primes. Sending result to Master Server.");
+//            dos.writeInt(primeCount); // Send the calculated prime count back to MasterServer
         } catch (IOException ex) {
             System.err.println("Failed to handle task from master: An error occurred with the MasterServer connection.");
             ex.printStackTrace();

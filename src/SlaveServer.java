@@ -13,6 +13,7 @@ public class SlaveServer {
     private static final int MASTER_REGISTRATION_PORT = 5001; // Port for registering with the master
     private static final int DEFAULT_SLAVE_SERVICE_PORT = 5002; // Change for each slave if running on the same machine
 
+
     public static void main(String[] args) {
         String masterAddress = DEFAULT_MASTER_ADDRESS;
         int slaveServicePort = DEFAULT_SLAVE_SERVICE_PORT;
@@ -90,21 +91,21 @@ public class SlaveServer {
         try (DataInputStream dis = new DataInputStream(masterSocket.getInputStream());
              DataOutputStream dos = new DataOutputStream(masterSocket.getOutputStream())) {
 
+            // read number of threads and size of numbers sent to slave from master
             int nThreads = dis.readInt();
             int size = dis.readInt();
-            System.out.println("numbers list count: " + size);
 
+            // read all numbers sent from master to slave
             ArrayList<Integer> numbersList = new ArrayList<>();
             for(int num = 0; num < size; num++){
                 numbersList.add(dis.readInt());
             }
 
-            System.out.println("Numbers received: " + numbersList);
 
             // This method should return the number of prime numbers found between startPoint and endPoint
-//            int primeCount = calculatePrimesWithThreads(startPoint, endPoint, nThreads);
-//            System.out.println("Calculated " + primeCount + " primes. Sending result to Master Server.");
-//            dos.writeInt(primeCount); // Send the calculated prime count back to MasterServer
+            int primeCount = calculatePrimesWithThreads(numbersList, nThreads);
+            System.out.println("Calculated " + primeCount + " primes. Sending result to Master Server.");
+            dos.writeInt(primeCount); // Send the calculated prime count back to MasterServer
         } catch (IOException ex) {
             System.err.println("Failed to handle task from master: An error occurred with the MasterServer connection.");
             ex.printStackTrace();
@@ -112,17 +113,27 @@ public class SlaveServer {
     }
 
     // Multithreaded Prime Calculation
-    private static int calculatePrimesWithThreads(int start, int end, int nThreads) {
+    private static int calculatePrimesWithThreads(ArrayList<Integer> numbersList, int nThreads) {
+
         List<Integer> primes = new ArrayList<>();
         Lock primesLock = new ReentrantLock();
         ExecutorService executor = Executors.newFixedThreadPool(nThreads);
-        int rangePerThread = (end - start + 1) / nThreads;
+
+        List<List<Integer>> distributedNumbers = new ArrayList<>(nThreads);
+
+        for(int i=0; i<nThreads; i++){
+            distributedNumbers.add(new ArrayList<>());
+        }
+
+        // distribute the list of numbers evenly
+        for (int i=0; i<numbersList.size(); i++){
+            int threadIndex = i % nThreads;
+            distributedNumbers.get(threadIndex).add(numbersList.get(i));
+        }
+
 
         for (int i = 0; i < nThreads; i++) {
-            int threadStart = start + i * rangePerThread;
-            int threadEnd = i == nThreads - 1 ? end : threadStart + rangePerThread - 1;
-
-            executor.submit(new PrimeTask(threadStart, threadEnd, primes, primesLock));
+            executor.submit(new PrimeTask(distributedNumbers.get(i), primes, primesLock));
         }
 
         executor.shutdown();
@@ -135,25 +146,23 @@ public class SlaveServer {
 
     // PrimeTask as a Runnable for Thread Execution
     static class PrimeTask implements Runnable {
-        private final int start;
-        private final int end;
+        private final List<Integer> numbers;
         private final List<Integer> primes;
         private final Lock lock;
 
-        PrimeTask(int start, int end, List<Integer> primes, Lock lock) {
-            this.start = start;
-            this.end = end;
+        PrimeTask(List<Integer> numbers, List<Integer> primes, Lock lock) {
+            this.numbers = numbers;
             this.primes = primes;
             this.lock = lock;
         }
 
         @Override
         public void run() {
-            for (int currentNum = start; currentNum <= end; currentNum++) {
-                if (isPrime(currentNum)) {
+            for (Integer num: numbers) {
+                if (isPrime(num)) {
                     lock.lock();
                     try {
-                        primes.add(currentNum);
+                        primes.add(num);
                     } finally {
                         lock.unlock();
                     }

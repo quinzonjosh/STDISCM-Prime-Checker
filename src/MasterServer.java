@@ -64,9 +64,6 @@ public class MasterServer {
             int endPoint = dis.readInt();
             int nThreads = dis.readInt();
 
-            // checker if num count from start to end is odd/even
-//            boolean isOddTotal= (endPoint - startPoint + 1) % 2 == 1;
-
             // storage for total primes from all slave servers
             AtomicInteger totalPrimes = new AtomicInteger();
 
@@ -101,7 +98,6 @@ public class MasterServer {
                                 slaveDos.writeInt(num);
                             }
                         }
-
 
                         totalPrimes.addAndGet(slaveDis.readInt()); // Receive prime count from slave
                     } catch (IOException e) {

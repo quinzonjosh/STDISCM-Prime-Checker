@@ -101,6 +101,8 @@ public class SlaveServer {
                 numbersList.add(dis.readInt());
             }
 
+//            System.out.println("received: " + numbersList);
+
 
             // This method should return the number of prime numbers found between startPoint and endPoint
             int primeCount = calculatePrimesWithThreads(numbersList, nThreads);
@@ -130,7 +132,6 @@ public class SlaveServer {
             int threadIndex = i % nThreads;
             distributedNumbers.get(threadIndex).add(numbersList.get(i));
         }
-
 
         for (int i = 0; i < nThreads; i++) {
             executor.submit(new PrimeTask(distributedNumbers.get(i), primes, primesLock));

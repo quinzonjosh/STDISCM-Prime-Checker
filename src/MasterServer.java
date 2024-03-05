@@ -15,7 +15,7 @@ public class MasterServer {
 
     public static void main(String[] args) {
         // Separate thread for listening to slave server registrations
-        Thread slaveListenerThread = new Thread(() -> listenForSlaveRegistrations());
+        Thread slaveListenerThread = new Thread(MasterServer::listenForSlaveRegistrations);
         slaveListenerThread.start();
 
         // declare a server socket host
@@ -73,7 +73,6 @@ public class MasterServer {
                 SlaveInfo slaveInfo = slaves.get(i);
                 System.out.println("Sending task from client to slave " + slaveInfo.getAddress() + ":" + slaveInfo.getPort());
 
-
                 // Submit slave handling as a Callable task to executor
                 futures.add(slaveExecutor.submit(() -> {
                     try (Socket slaveSocket = new Socket(slaveInfo.getAddress(), slaveInfo.getPort())) {
@@ -85,19 +84,33 @@ public class MasterServer {
 
                         int count = 0;
                         // send the size of the range of numbers to be passed to the server
+                        List<Integer> numbersToSend = new ArrayList<>();
                         for (int num = startPoint; num <= endPoint; num++) {
                             if ((finalI == 0 && num % 2 != 0) || (finalI == 1 && num % 2 == 0)) {
                                 count++;
+                                numbersToSend.add(num);
                             }
                         }
                         slaveDos.writeInt(count);
 
                         // send the values to the server
-                        for (int num = startPoint; num <= endPoint; num++) {
-                            if ((finalI == 0 && num % 2 != 0) || (finalI == 1 && num % 2 == 0)) {
-                                slaveDos.writeInt(num);
+
+                        int batchSize = 100_000; // adjust the batch size as needed
+                        for (int j = 0; j < numbersToSend.size(); j += batchSize) {
+                            int endIndex = Math.min(j + batchSize, numbersToSend.size());
+                            for (int k = j; k < endIndex; k++) {
+                                slaveDos.writeInt(numbersToSend.get(k));
                             }
+                            System.out.println("Batch of numbers sent to " + (finalI == 0 ? "odd" : "even") + " server - Last number: " + numbersToSend.get(endIndex - 1));
                         }
+
+//                        for (int num = startPoint; num <= endPoint; num++) {
+//                            if ((finalI == 0 && num % 2 != 0) || (finalI == 1 && num % 2 == 0)) {
+//                                slaveDos.writeInt(num);
+//                                if(finalI == 0) System.out.println("Number " + num + " sent to odd server");
+//                                else System.out.println("Number " + num + " sent to even server");
+//                            }
+
 
                         totalPrimes.addAndGet(slaveDis.readInt()); // Receive prime count from slave
                     } catch (IOException e) {
